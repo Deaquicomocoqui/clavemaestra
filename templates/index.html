@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clave Maestra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --ink:        #0d0d0f;
+      --ink-2:      #141418;
+      --ink-3:      #1c1c22;
+      --ink-4:      #27272f;
+      --ink-5:      #35353f;
+      --gold:       #c9a84c;
+      --gold-light: #e8c97a;
+      --gold-dim:   #7a6230;
+      --silver:     #8a8a9a;
+      --mist:       #4a4a58;
+      --text:       #e8e8f0;
+      --text-dim:   #9090a8;
+      --red:        #e05252;
+      --green:      #52c07a;
+      --radius:     14px;
+      --ease:       cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px 48px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Ambient glow */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 18% 8%, rgba(201,168,76,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 82% 92%, rgba(201,168,76,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Fine grid */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201,168,76,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,168,76,0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 580px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      animation: fadeDown 0.65s var(--ease) both;
+    }
+
+    .lock-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 62px; height: 62px;
+      border-radius: 18px;
+      background: linear-gradient(145deg, var(--ink-3), var(--ink-4));
+      border: 1px solid var(--gold-dim);
+      margin-bottom: 18px;
+      box-shadow:
+        0 0 0 4px rgba(201,168,76,0.05),
+        0 0 30px rgba(201,168,76,0.12),
+        inset 0 1px 0 rgba(201,168,76,0.12);
+    }
+
+    .lock-icon svg { width: 26px; height: 26px; color: var(--gold); }
+
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2em, 5.5vw, 2.8em);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 45%, #9a7030 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .tagline {
+      font-size: 0.72em;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--mist);
+      font-weight: 300;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--ink-2);
+      border: 1px solid var(--ink-5);
+      border-radius: 22px;
+      padding: 30px 28px;
+      box-shadow:
+        0 28px 70px rgba(0,0,0,0.65),
+        0 0 0 1px rgba(255,255,255,0.03),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      animation: fadeUp 0.6s 0.1s var(--ease) both;
+    }
+
+    /* ── Vault display ── */
+    .vault {
+      position: relative;
+      background: var(--ink);
+      border: 1px solid var(--ink-5);
+      border-radius: var(--radius);
+      padding: 30px 18px 22px;
+      margin-bottom: 26px;
+      min-height: 114px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    /* Gold hairline top */
+    .vault::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 12%; right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.7;
+    }
+
+    /* Corner brackets */
+    .vc { position: absolute; width: 13px; height: 13px; border-color: var(--gold-dim); border-style: solid; opacity: 0.55; }
+    .vc.tl { top: 7px; left: 7px; border-width: 1px 0 0 1px; }
+    .vc.tr { top: 7px; right: 7px; border-width: 1px 1px 0 0; }
+    .vc.bl { bottom: 7px; left: 7px; border-width: 0 0 1px 1px; }
+    .vc.br { bottom: 7px; right: 7px; border-width: 0 1px 1px 0; }
+
+    #pw {
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(0.9em, 2.4vw, 1.22em);
+      font-weight: 400;
+      color: var(--text);
+      word-break: break-all;
+      text-align: center;
+      letter-spacing: 0.05em;
+      line-height: 1.65;
+      padding: 0 44px;
+      transition: opacity 0.18s;
+    }
+
+    #pw.ph {
+      color: var(--mist);
+      font-style: italic;
+      font-size: 0.85em;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      letter-spacing: 0;
+      padding: 0 20px;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 9px; right: 9px;
+      display: none;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      border: 1px solid var(--ink-5);
+      color: var(--text-dim);
+      padding: 5px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.75em;
+      font-family: 'DM Sans', sans-serif;
+      letter-spacing: 0.05em;
+      transition: all 0.18s var(--ease);
+    }
+    .copy-btn:hover { border-color: var(--gold-dim); color: var(--gold); background: rgba(201,168,76,0.07); }
+    .copy-btn:active { transform: scale(0.95); }
+    .copy-btn.on { display: flex; }
+
+    /* Strength */
+    .str-wrap { width: 100%; display: none; flex-direction: column; gap: 7px; }
+    .str-wrap.on { display: flex; }
+    .str-track { width: 100%; height: 3px; background: var(--ink-4); border-radius: 2px; overflow: hidden; }
+    .str-fill { height: 100%; border-radius: 2px; transition: width 0.5s var(--ease), background 0.4s; width: 0; }
+    .str-meta { display: flex; justify-content: space-between; }
+    .str-lbl { font-size: 0.7em; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500; }
+    .str-ent { font-family: 'DM Mono', monospace; font-size: 0.7em; color: var(--mist); }
+
+    /* ── Divider ── */
+    .div {
+      display: flex; align-items: center; gap: 12px;
+      margin: 4px 0 20px;
+    }
+    .div::before, .div::after { content: ''; flex: 1; height: 1px; background: var(--ink-5); }
+    .div span { font-size: 0.65em; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mist); }
+
+    /* ── Controls ── */
+    .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 24px; }
+
+    .ctrl-lbl {
+      font-size: 0.76em;
+      letter-spacing: 0.07em;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .ctrl-lbl .ic { opacity: 0.6; font-style: normal; width: 14px; text-align: center; }
+    .ctrl-lbl .live { color: var(--gold); margin-left: 3px; }
+
+    .ctrl-row { display: grid; grid-template-columns: 1fr 38px; align-items: center; gap: 13px; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--ink-4);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid var(--ink-2);
+      cursor: pointer;
+      box-shadow: 0 0 9px rgba(201,168,76,0.45);
+      transition: transform 0.18s var(--ease), box-shadow 0.18s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.3);
+      box-shadow: 0 0 18px rgba(201,168,76,0.65);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid var(--ink-2);
+      cursor: pointer;
+    }
+
+    .badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78em;
+      font-weight: 500;
+      color: var(--gold);
+      background: rgba(201,168,76,0.08);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 6px;
+      text-align: center;
+      padding: 4px 0;
+    }
+
+    /* ── Generate button ── */
+    .gen-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #c9a84c 0%, #a07530 100%);
+      color: #0d0d0f;
+      border: none;
+      padding: 15px;
+      border-radius: var(--radius);
+      font-family: 'Cinzel', serif;
+      font-size: 0.92em;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      cursor: pointer;
+      transition: transform 0.18s var(--ease), box-shadow 0.18s;
+      margin-bottom: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+    .gen-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+    }
+    .gen-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(201,168,76,0.38); }
+    .gen-btn:active { transform: translateY(0); box-shadow: none; }
+
+    /* ── Stats ── */
+    .stats { display: none; }
+    .stats.on { display: block; animation: fadeUp 0.38s var(--ease) both; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+    .stat-cell {
+      background: var(--ink);
+      border: 1px solid var(--ink-5);
+      border-radius: 10px;
+      padding: 11px 8px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-cell::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 20%; right: 20%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(201,168,76,0.35), transparent);
+    }
+    .stat-lbl { font-size: 0.62em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mist); margin-bottom: 5px; }
+    .stat-val { font-family: 'DM Mono', monospace; font-size: 1.2em; font-weight: 500; color: var(--text); }
+
+    .ent-hint { margin-top: 11px; text-align: center; font-size: 0.7em; color: var(--mist); letter-spacing: 0.06em; }
+
+    /* ── Error ── */
+    .err {
+      background: rgba(224,82,82,0.07);
+      border: 1px solid rgba(224,82,82,0.28);
+      color: #f09090;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 0.8em;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .err.on { display: block; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 26px; right: 26px;
+      background: var(--ink-3);
+      border: 1px solid var(--gold-dim);
+      color: var(--gold-light);
+      padding: 11px 20px;
+      border-radius: 10px;
+      font-size: 0.8em;
+      letter-spacing: 0.04em;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+      opacity: 0;
+      transform: translateY(14px);
+      transition: all 0.28s var(--ease);
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.on { opacity: 1; transform: translateY(0); }
+    .toast.fail { border-color: rgba(224,82,82,0.45); color: #f09090; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 0.66em;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-5);
+      animation: fadeUp 0.6s 0.3s var(--ease) both;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 22px 16px; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      #pw { padding: 0 50px 0 12px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="lock-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        <circle cx="12" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+      </svg>
+    </div>
+    <h1>Clave Maestra</h1>
+    <p class="tagline">Enterprise Password Generator</p>
+  </header>
+
+  <div class="card">
+
+    <!-- Vault -->
+    <div class="vault">
+      <div class="vc tl"></div><div class="vc tr"></div>
+      <div class="vc bl"></div><div class="vc br"></div>
+
+      <button class="copy-btn" id="copyBtn" onclick="copyPassword()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Copy
+      </button>
+
+      <div id="pw" class="ph">Generate a password to begin</div>
+
+      <div class="str-wrap" id="strWrap">
+        <div class="str-track"><div class="str-fill" id="strFill"></div></div>
+        <div class="str-meta">
+          <span class="str-lbl" id="strLbl"></span>
+          <span class="str-ent" id="strEnt"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="err" id="errMsg"></div>
+
+    <div class="div"><span>Configure</span></div>
+
+    <!-- Sliders -->
+    <div class="controls">
+
+      <div>
+        <div class="ctrl-lbl"><em class="ic">⇔</em> Password Length <span class="live" id="lengthValue">16</span></div>
+        <div class="ctrl-row">
+          <input type="range" id="length" min="8" max="128" value="16" oninput="sync('length')">
+          <div class="badge" id="lengthDisplay">16</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="ctrl-lbl"><em class="ic">a</em> Min Lowercase <span class="live" id="minLowercaseValue">2</span></div>
+        <div class="ctrl-row">
+          <input type="range" id="minLowercase" min="0" max="20" value="2" oninput="sync('minLowercase')">
+          <div class="badge" id="minLowercaseDisplay">2</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="ctrl-lbl"><em class="ic">A</em> Min Uppercase <span class="live" id="minUppercaseValue">2</span></div>
+        <div class="ctrl-row">
+          <input type="range" id="minUppercase" min="0" max="20" value="2" oninput="sync('minUppercase')">
+          <div class="badge" id="minUppercaseDisplay">2</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="ctrl-lbl"><em class="ic">#</em> Min Digits <span class="live" id="minDigitsValue">2</span></div>
+        <div class="ctrl-row">
+          <input type="range" id="minDigits" min="0" max="20" value="2" oninput="sync('minDigits')">
+          <div class="badge" id="minDigitsDisplay">2</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="ctrl-lbl"><em class="ic">@</em> Min Special <span class="live" id="minSpecialValue">2</span></div>
+        <div class="ctrl-row">
+          <input type="range" id="minSpecial" min="0" max="20" value="2" oninput="sync('minSpecial')">
+          <div class="badge" id="minSpecialDisplay">2</div>
+        </div>
+      </div>
+
+    </div>
+
+    <button class="gen-btn" onclick="generatePassword()">Generate Password</button>
+
+    <!-- Stats -->
+    <div class="stats" id="stats">
+      <div class="div" style="margin-top:0"><span>Composition</span></div>
+      <div class="stat-grid">
+        <div class="stat-cell"><div class="stat-lbl">Length</div><div class="stat-val" id="sLen">–</div></div>
+        <div class="stat-cell"><div class="stat-lbl">Lowercase</div><div class="stat-val" id="sLow">–</div></div>
+        <div class="stat-cell"><div class="stat-lbl">Uppercase</div><div class="stat-val" id="sUp">–</div></div>
+        <div class="stat-cell"><div class="stat-lbl">Digits</div><div class="stat-val" id="sDig">–</div></div>
+        <div class="stat-cell"><div class="stat-lbl">Special</div><div class="stat-val" id="sSpc">–</div></div>
+        <div class="stat-cell"><div class="stat-lbl">Entropy</div><div class="stat-val" id="sEnt">–</div></div>
+      </div>
+      <p class="ent-hint">≥ 80 bits recommended for enterprise use</p>
+    </div>
+
+  </div>
+
+  <p class="footer">Clave Maestra &nbsp;·&nbsp; Passwords never stored or transmitted</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function sync(id) {
+    const v = document.getElementById(id).value;
+    document.getElementById(id + 'Display').textContent = v;
+    document.getElementById(id + 'Value').textContent   = v;
+  }
+
+  async function generatePassword() {
+    hideErr();
+    const pwEl = document.getElementById('pw');
+    pwEl.style.opacity = '0.25';
+
+    const payload = {
+      length:        +document.getElementById('length').value,
+      min_lowercase: +document.getElementById('minLowercase').value,
+      min_uppercase: +document.getElementById('minUppercase').value,
+      min_digits:    +document.getElementById('minDigits').value,
+      min_special:   +document.getElementById('minSpecial').value,
+    };
+
+    try {
+      const res  = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      pwEl.style.opacity = '1';
+
+      if (!res.ok) { showErr(data.error); return; }
+
+      pwEl.textContent = data.password;
+      pwEl.classList.remove('ph');
+      document.getElementById('copyBtn').classList.add('on');
+
+      const { entropy, strength } = data.stats;
+      const fill = document.getElementById('strFill');
+      fill.style.width      = Math.min(100, (entropy / 120) * 100).toFixed(1) + '%';
+      fill.style.background = strength.color;
+      const lbl = document.getElementById('strLbl');
+      lbl.textContent = strength.label;
+      lbl.style.color = strength.color;
+      document.getElementById('strEnt').textContent = entropy + ' bits';
+      document.getElementById('strWrap').classList.add('on');
+
+      document.getElementById('sLen').textContent = data.stats.length;
+      document.getElementById('sLow').textContent = data.stats.lowercase;
+      document.getElementById('sUp').textContent  = data.stats.uppercase;
+      document.getElementById('sDig').textContent = data.stats.digits;
+      document.getElementById('sSpc').textContent = data.stats.special;
+      document.getElementById('sEnt').textContent = entropy;
+      document.getElementById('stats').classList.add('on');
+
+    } catch (e) {
+      document.getElementById('pw').style.opacity = '1';
+      showErr('Cannot reach the server — is Flask running?');
+    }
+  }
+
+  async function copyPassword() {
+    const pw = document.getElementById('pw');
+    if (!pw || pw.classList.contains('ph')) return;
+
+    let ok = false;
+
+    // Modern API (HTTPS + localhost)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try { await navigator.clipboard.writeText(pw.textContent); ok = true; }
+      catch (_) {}
+    }
+
+    // Fallback execCommand (plain HTTP / LAN)
+    if (!ok) {
+      try {
+        const t = document.createElement('textarea');
+        t.value = pw.textContent;
+        t.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+        document.body.appendChild(t);
+        t.focus(); t.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(t);
+      } catch (_) {}
+    }
+
+    const toast = document.getElementById('toast');
+    toast.classList.remove('fail', 'on');
+    void toast.offsetWidth; // reflow for re-animation
+
+    if (ok) {
+      toast.textContent = '✓  Copied to clipboard';
+    } else {
+      toast.textContent = '⚠  Auto-copy unavailable — select manually';
+      toast.classList.add('fail');
+    }
+    toast.classList.add('on');
+    setTimeout(() => toast.classList.remove('on'), 2800);
+  }
+
+  function showErr(m) {
+    const e = document.getElementById('errMsg');
+    e.textContent = '⚠  ' + m;
+    e.classList.add('on');
+  }
+  function hideErr() { document.getElementById('errMsg').classList.remove('on'); }
+
+  window.addEventListener('load', generatePassword);
+</script>
+</body>
+</html>
